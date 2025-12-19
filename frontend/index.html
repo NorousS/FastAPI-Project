@@ -1,0 +1,570 @@
+<! DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Reviews</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Anime Reviews</h1>
+
+        <div class="tabs">
+            <button onclick="showTab('anime')" class="active" id="anime-tab">All Anime</button>
+            <button onclick="showTab('stats')" id="stats-tab">Top Rated</button>
+        </div>
+
+        <div id="anime-section">
+            <button onclick="showAddAnime()">Add New Anime</button>
+
+            <div id="anime-form" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <h3>Add New Anime</h3>
+                    <input type="text" id="anime-title" placeholder="Anime Title" required>
+
+                    <div class="add-review-option">
+                        <label>
+                            <input type="checkbox" id="add-with-review" onchange="toggleAddReviewSection()">
+                            Add my review immediately
+                        </label>
+                    </div>
+
+                    <div id="add-review-section" style="display: none;">
+                        <h4>Your Review</h4>
+                        <input type="text" id="add-review-user" placeholder="Your name" required>
+                        <select id="add-review-status">
+                            <option value="watched">Watched</option>
+                            <option value="planning">Planning to watch</option>
+                        </select>
+                        <div>
+                            <label>Rating:  <span id="add-rating-value">5. 0</span> / 10</label>
+                            <div class="star-rating" id="add-star-rating">
+                            </div>
+                            <input type="range" id="add-review-rating" min="0" max="10" step="0.5" value="5"
+                                oninput="updateStars(this.value, 'add-star-rating', 'add-rating-value')">
+                            <p class="hint" id="add-rating-hint" style="display: none;">Planning status cannot have a rating</p>
+                        </div>
+                        <textarea id="add-review-text" placeholder="Your review (optional)" rows="3"></textarea>
+                    </div>
+
+                    <button onclick="addAnime()">Add</button>
+                    <button onclick="hideAddAnime()">Cancel</button>
+                </div>
+            </div>
+
+            <div id="anime-list"></div>
+
+            <div id="anime-detail" class="modal" style="display: none;">
+                <div class="modal-content large">
+                    <span class="close" onclick="hideAnimeDetail()">&times;</span>
+                    <div id="anime-detail-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="stats-section" style="display: none;">
+            <h2>Top Rated Anime</h2>
+            <div id="stats-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const API = '/api';
+        let currentAnimeId = null;
+        let editingReviewId = null;
+
+        function createStarsHTML(rating) {
+            let stars = '';
+            for (let i = 1; i <= 10; i++) {
+                if (i <= rating) {
+                    stars += '<span class="star filled">★</span>';
+                } else {
+                    stars += '<span class="star">☆</span>';
+                }
+            }
+            return stars;
+        }
+
+        function toggleAddReviewSection() {
+            const checkbox = document.getElementById('add-with-review');
+            const section = document.getElementById('add-review-section');
+
+            if (checkbox.checked) {
+                section.style.display = 'block';
+                document. getElementById('add-star-rating').innerHTML = createStarsHTML(5);
+                updateStars(5, 'add-star-rating', 'add-rating-value');
+                setupAddReviewStatusHandler();
+            } else {
+                section.style.display = 'none';
+            }
+        }
+
+        function setupAddReviewStatusHandler() {
+            const statusSelect = document.getElementById('add-review-status');
+            const ratingInput = document.getElementById('add-review-rating');
+            const hint = document.getElementById('add-rating-hint');
+
+            statusSelect.removeEventListener('change', handleAddReviewStatusChange);
+            statusSelect.addEventListener('change', handleAddReviewStatusChange);
+
+            function handleAddReviewStatusChange() {
+                if (statusSelect. value === 'planning') {
+                    ratingInput.value = '0';
+                    ratingInput.disabled = true;
+                    hint. style.display = 'block';
+                    updateStars(0, 'add-star-rating', 'add-rating-value');
+                } else {
+                    ratingInput.disabled = false;
+                    hint. style.display = 'none';
+                    if (ratingInput.value === '0') {
+                        ratingInput.value = '5';
+                        updateStars(5, 'add-star-rating', 'add-rating-value');
+                    }
+                }
+            }
+        }
+
+        function showTab(tab) {
+            if (tab === 'anime') {
+                document.getElementById('anime-section').style.display = 'block';
+                document.getElementById('stats-section').style.display = 'none';
+                document.getElementById('anime-tab').classList.add('active');
+                document.getElementById('stats-tab').classList.remove('active');
+                loadAnime();
+            } else if (tab === 'stats') {
+                document.getElementById('anime-section').style.display = 'none';
+                document.getElementById('stats-section').style.display = 'block';
+                document. getElementById('stats-tab').classList.add('active');
+                document.getElementById('anime-tab').classList.remove('active');
+                loadStats();
+            }
+        }
+
+        function showAddAnime() {
+            document.getElementById('anime-form').style.display = 'flex';
+        }
+
+        function hideAddAnime() {
+            document.getElementById('anime-form').style.display = 'none';
+            document.getElementById('anime-title').value = '';
+            document. getElementById('add-with-review').checked = false;
+            document.getElementById('add-review-section').style.display = 'none';
+            document.getElementById('add-review-user').value = '';
+            document.getElementById('add-review-text').value = '';
+            document. getElementById('add-review-status').value = 'watched';
+            document.getElementById('add-review-rating').value = '5';
+        }
+
+        async function loadAnime() {
+            const response = await fetch(`${API}/anime`);
+            const data = await response.json();
+
+            let html = '<div class="items">';
+            data.forEach(anime => {
+                const rating = anime.average_rating ?  anime.average_rating. toFixed(1) : 'No ratings';
+                const reviewText = anime.latest_review_text || 'No reviews yet';
+                const reviewUser = anime.latest_review_user || '';
+                const reviewPreview = reviewText.length > 100 ? reviewText. substring(0, 100) + '...' : reviewText;
+
+                html += `
+                    <div class="item anime-card" onclick="showAnimeDetail(${anime.id})">
+                        <h3>${anime.title}</h3>
+                        <div class="anime-meta">
+                            <span class="rating">★ ${rating}</span>
+                            <span class="reviews">${anime.total_reviews} reviews</span>
+                        </div>
+                        ${anime.latest_review_user ? `
+                            <div class="card-review">
+                                <div class="card-review-header">
+                                    <strong>${reviewUser}</strong>
+                                </div>
+                                <p class="card-review-text">${reviewPreview}</p>
+                            </div>
+                        ` : '<p class="no-reviews-preview">No reviews yet</p>'}
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            document.getElementById('anime-list').innerHTML = html;
+        }
+
+        async function showAnimeDetail(animeId) {
+            currentAnimeId = animeId;
+            const response = await fetch(`${API}/anime/${animeId}`);
+            const data = await response.json();
+
+            const anime = data.anime;
+            const reviews = data.reviews;
+
+            let html = `
+                <div class="anime-header">
+                    <h2>${anime.title}</h2>
+                    <div class="anime-stats">
+                        <span class="big-rating">★ ${anime.average_rating ?  anime.average_rating.toFixed(1) : 'N/A'}</span>
+                        <span>${anime.total_reviews} reviews</span>
+                    </div>
+                    <button onclick="showAddReview()">Add Review</button>
+                    <button onclick="deleteAnime(${anime.id})" class="delete-btn">Delete Anime</button>
+                </div>
+
+                <div id="review-form" class="review-form" style="display: none;">
+                    <h3 id="review-form-title">Write a Review</h3>
+                    <input type="text" id="review-user" placeholder="Your name" required>
+                    <select id="review-status">
+                        <option value="watched">Watched</option>
+                        <option value="planning">Planning to watch</option>
+                    </select>
+                    <div id="rating-container">
+                        <label>Rating: <span id="rating-value">5.0</span> / 10</label>
+                        <div class="star-rating" id="star-rating">
+                        </div>
+                        <input type="range" id="review-rating" min="0" max="10" step="0.5" value="5" oninput="updateStars(this.value, 'star-rating', 'rating-value')">
+                        <p class="hint" id="rating-hint" style="display: none;">Planning status cannot have a rating</p>
+                    </div>
+                    <textarea id="review-text" placeholder="Your review (optional)" rows="4"></textarea>
+                    <button onclick="submitReview()">Submit Review</button>
+                    <button onclick="hideAddReview()">Cancel</button>
+                </div>
+
+                <div class="reviews-section">
+                    <h3>Reviews (${reviews.length})</h3>
+            `;
+
+            if (reviews.length === 0) {
+                html += '<p class="no-reviews">No reviews yet.  Be the first to review!</p>';
+            } else {
+                reviews.forEach(review => {
+                    const statusBadge = review.status === 'watched'
+                        ? '<span class="badge watched">Watched</span>'
+                        : '<span class="badge planning">Planning</span>';
+
+                    html += `
+                        <div class="review-item" id="review-${review.id}">
+                            <div class="review-header">
+                                <strong>${review.user_name}</strong>
+                                ${statusBadge}
+                                ${review.status === 'watched' ? `<span class="review-rating">★ ${review.rating}</span>` : ''}
+                                <button onclick="editReview(${review.id})" class="edit-btn">Edit</button>
+                                <button onclick="deleteReview(${review.id})" class="delete-small">Delete</button>
+                            </div>
+                            ${review.review_text ? `<p class="review-text">${review.review_text}</p>` : '<p class="review-text no-text">No review text</p>'}
+                            <span class="review-date">${new Date(review.created_at).toLocaleDateString()}</span>
+
+                            <div id="edit-form-${review.id}" class="edit-form" style="display: none;">
+                                <h4>Edit Review</h4>
+                                <select id="edit-status-${review.id}">
+                                    <option value="watched" ${review.status === 'watched' ? 'selected' : ''}>Watched</option>
+                                    <option value="planning" ${review.status === 'planning' ? 'selected' : ''}>Planning to watch</option>
+                                </select>
+                                <div>
+                                    <label>Rating: <span id="edit-rating-value-${review.id}">${review.rating}</span> / 10</label>
+                                    <div class="star-rating" id="edit-star-rating-${review.id}">
+                                        ${createStarsHTML(review.rating)}
+                                    </div>
+                                    <input type="range" id="edit-rating-${review.id}" min="0" max="10" step="0.5" value="${review. rating}"
+                                        oninput="updateStars(this.value, 'edit-star-rating-${review.id}', 'edit-rating-value-${review.id}')"
+                                        ${review.status === 'planning' ? 'disabled' : ''}>
+                                </div>
+                                <textarea id="edit-text-${review.id}" placeholder="Your review" rows="4">${review.review_text || ''}</textarea>
+                                <button onclick="saveReview(${review.id})">Save</button>
+                                <button onclick="cancelEdit(${review.id})">Cancel</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            html += '</div>';
+
+            document.getElementById('anime-detail-content').innerHTML = html;
+            document.getElementById('anime-detail').style.display = 'flex';
+
+            const starRating = document.getElementById('star-rating');
+            if (starRating) {
+                starRating.innerHTML = createStarsHTML(5);
+            }
+
+            setupStatusChangeHandlers();
+        }
+
+        function updateStars(value, starContainerId, valueDisplayId) {
+            const starContainer = document.getElementById(starContainerId);
+            const valueDisplay = document.getElementById(valueDisplayId);
+
+            if (starContainer) {
+                starContainer.innerHTML = createStarsHTML(parseFloat(value));
+            }
+            if (valueDisplay) {
+                valueDisplay.textContent = parseFloat(value).toFixed(1);
+            }
+        }
+
+        function setupStatusChangeHandlers() {
+            const reviewStatus = document.getElementById('review-status');
+            if (reviewStatus) {
+                reviewStatus.addEventListener('change', function() {
+                    const ratingInput = document.getElementById('review-rating');
+                    const hint = document.getElementById('rating-hint');
+                    if (this.value === 'planning') {
+                        ratingInput.value = '0';
+                        ratingInput.disabled = true;
+                        hint.style.display = 'block';
+                        updateStars(0, 'star-rating', 'rating-value');
+                    } else {
+                        ratingInput.disabled = false;
+                        hint.style.display = 'none';
+                        if (ratingInput. value === '0') {
+                            ratingInput.value = '5';
+                            updateStars(5, 'star-rating', 'rating-value');
+                        }
+                    }
+                });
+            }
+        }
+
+        function hideAnimeDetail() {
+            document.getElementById('anime-detail').style.display = 'none';
+            currentAnimeId = null;
+            editingReviewId = null;
+        }
+
+        function showAddReview() {
+            editingReviewId = null;
+            document.getElementById('review-form-title').textContent = 'Write a Review';
+            document.getElementById('review-user').value = '';
+            document.getElementById('review-status').value = 'watched';
+            document.getElementById('review-rating').value = '5';
+            document.getElementById('review-text').value = '';
+            document. getElementById('review-rating').disabled = false;
+            document.getElementById('rating-hint').style.display = 'none';
+            document.getElementById('star-rating').innerHTML = createStarsHTML(5);
+            updateStars(5, 'star-rating', 'rating-value');
+            document.getElementById('review-form').style.display = 'block';
+        }
+
+        function hideAddReview() {
+            document.getElementById('review-form').style.display = 'none';
+            editingReviewId = null;
+        }
+
+        async function addAnime() {
+            const title = document.getElementById('anime-title').value;
+            const addWithReview = document.getElementById('add-with-review').checked;
+
+            if (!title) {
+                alert('Title is required');
+                return;
+            }
+
+            try {
+                const animeResponse = await fetch(`${API}/anime`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ title })
+                });
+
+                if (! animeResponse.ok) {
+                    const error = await animeResponse.json();
+                    alert(error.detail);
+                    return;
+                }
+
+                const animeData = await animeResponse. json();
+                const newAnimeId = animeData.id;
+
+                if (addWithReview) {
+                    const userName = document.getElementById('add-review-user').value;
+                    const status = document.getElementById('add-review-status').value;
+                    const rating = parseFloat(document.getElementById('add-review-rating').value);
+                    const reviewText = document.getElementById('add-review-text').value;
+
+                    if (!userName) {
+                        alert('Your name is required for the review');
+                        return;
+                    }
+
+                    if (status === 'planning' && rating > 0) {
+                        alert('Cannot rate anime with planning status');
+                        return;
+                    }
+
+                    const reviewResponse = await fetch(`${API}/reviews`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            anime_id: newAnimeId,
+                            user_name: userName,
+                            rating: rating,
+                            review_text: reviewText || null,
+                            status: status
+                        })
+                    });
+
+                    if (!reviewResponse.ok) {
+                        const error = await reviewResponse.json();
+                        alert('Anime added but review failed: ' + error.detail);
+                    }
+                }
+
+                hideAddAnime();
+                loadAnime();
+            } catch (error) {
+                alert('Error adding anime');
+            }
+        }
+
+        async function deleteAnime(id) {
+            if (! confirm('Delete this anime and all its reviews?')) return;
+
+            await fetch(`${API}/anime/${id}`, {method: 'DELETE'});
+            hideAnimeDetail();
+            loadAnime();
+        }
+
+        async function submitReview() {
+            const userName = document.getElementById('review-user').value;
+            const status = document.getElementById('review-status').value;
+            const rating = parseFloat(document.getElementById('review-rating').value);
+            const reviewText = document.getElementById('review-text').value;
+
+            if (!userName) {
+                alert('Name is required');
+                return;
+            }
+
+            if (status === 'planning' && rating > 0) {
+                alert('Cannot rate anime with planning status');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API}/reviews`, {
+                    method: 'POST',
+                    headers:  {'Content-Type': 'application/json'},
+                    body:  JSON.stringify({
+                        anime_id: currentAnimeId,
+                        user_name: userName,
+                        rating: rating,
+                        review_text: reviewText || null,
+                        status: status
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert(error.detail);
+                    return;
+                }
+
+                hideAddReview();
+                showAnimeDetail(currentAnimeId);
+            } catch (error) {
+                alert('Error adding review');
+            }
+        }
+
+        function editReview(reviewId) {
+            document.querySelectorAll('.edit-form').forEach(form => {
+                form.style.display = 'none';
+            });
+
+            const editForm = document.getElementById(`edit-form-${reviewId}`);
+            editForm.style.display = 'block';
+
+            const statusSelect = document.getElementById(`edit-status-${reviewId}`);
+            const ratingInput = document.getElementById(`edit-rating-${reviewId}`);
+
+            statusSelect.addEventListener('change', function() {
+                if (this.value === 'planning') {
+                    ratingInput.value = '0';
+                    ratingInput.disabled = true;
+                    updateStars(0, `edit-star-rating-${reviewId}`, `edit-rating-value-${reviewId}`);
+                } else {
+                    ratingInput.disabled = false;
+                    if (ratingInput.value === '0') {
+                        ratingInput.value = '5';
+                        updateStars(5, `edit-star-rating-${reviewId}`, `edit-rating-value-${reviewId}`);
+                    }
+                }
+            });
+        }
+
+        function cancelEdit(reviewId) {
+            document.getElementById(`edit-form-${reviewId}`).style.display = 'none';
+        }
+
+        async function saveReview(reviewId) {
+            const status = document.getElementById(`edit-status-${reviewId}`).value;
+            const rating = parseFloat(document.getElementById(`edit-rating-${reviewId}`).value);
+            const reviewText = document.getElementById(`edit-text-${reviewId}`).value;
+
+            if (status === 'planning' && rating > 0) {
+                alert('Cannot rate anime with planning status');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API}/reviews/${reviewId}`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        rating: rating,
+                        review_text: reviewText || null,
+                        status: status
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response. json();
+                    alert(error.detail);
+                    return;
+                }
+
+                showAnimeDetail(currentAnimeId);
+            } catch (error) {
+                alert('Error updating review');
+            }
+        }
+
+        async function deleteReview(id) {
+            if (! confirm('Delete this review?')) return;
+
+            await fetch(`${API}/reviews/${id}`, {method: 'DELETE'});
+            showAnimeDetail(currentAnimeId);
+        }
+
+        async function loadStats() {
+            const response = await fetch(`${API}/stats`);
+            const data = await response.json();
+
+            if (data.length === 0) {
+                document.getElementById('stats-list').innerHTML = '<p class="no-data">No rated anime yet</p>';
+                return;
+            }
+
+            let html = '<div class="stats-items">';
+            data.forEach((anime, index) => {
+                html += `
+                    <div class="stat-item">
+                        <div class="stat-rank">#${index + 1}</div>
+                        <div class="stat-info">
+                            <h3>${anime.title}</h3>
+                            <div class="stat-meta">
+                                <span class="stat-rating">★ ${anime.average_rating. toFixed(1)}</span>
+                                <span class="stat-reviews">${anime.review_count} reviews</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            document.getElementById('stats-list').innerHTML = html;
+        }
+
+        loadAnime();
+    </script>
+</body>
+</html>

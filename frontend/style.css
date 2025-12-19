@@ -1,0 +1,424 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding:  20px;
+    background:  linear-gradient(to right, #6a11cb, #2575fc);
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+}
+
+h2 {
+    color: #333;
+    margin-bottom: 10px;
+}
+
+h4 {
+    color: #333;
+    margin:  10px 0;
+}
+
+. tabs {
+    display: flex;
+    gap: 10px;
+    margin:  20px 0;
+}
+
+.tabs button {
+    flex: 1;
+    padding:  10px;
+    border: none;
+    background: #eee;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.tabs button.active {
+    background: #2575fc;
+    color: white;
+}
+
+input, textarea, select {
+    display: block;
+    width: 100%;
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius:  5px;
+    font-family: Arial, sans-serif;
+    box-sizing: border-box;
+}
+
+input[type="range"] {
+    cursor: pointer;
+}
+
+input[type="checkbox"] {
+    display: inline-block;
+    width: auto;
+    margin:  0;
+}
+
+button {
+    padding: 10px 20px;
+    background: #2575fc;
+    color: white;
+    border:  none;
+    border-radius:  5px;
+    cursor:  pointer;
+    margin:  5px;
+}
+
+button:hover {
+    background: #1a5dc7;
+}
+
+.delete-btn {
+    background: #dc3545;
+}
+
+.delete-btn:hover {
+    background: #c82333;
+}
+
+.delete-small {
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #dc3545;
+}
+
+.edit-btn {
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #28a745;
+}
+
+.edit-btn:hover {
+    background: #218838;
+}
+
+.items {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.item {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius:  5px;
+    border-left: 4px solid #2575fc;
+}
+
+.anime-card {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.anime-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.item h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.item p {
+    margin: 5px 0;
+    color: #666;
+}
+
+.anime-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+.rating {
+    color: #ffa500;
+    font-weight:  bold;
+}
+
+.reviews {
+    color: #666;
+}
+
+.card-review {
+    margin-top: 15px;
+    padding: 10px;
+    background: #fff;
+    border-radius: 5px;
+    border-left: 3px solid #2575fc;
+}
+
+.card-review-header {
+    margin-bottom: 5px;
+}
+
+.card-review-header strong {
+    color:  #2575fc;
+    font-size:  14px;
+}
+
+. card-review-text {
+    margin: 5px 0 0 0;
+    color:  #555;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.no-reviews-preview {
+    margin-top:  15px;
+    color:  #999;
+    font-style: italic;
+    font-size: 13px;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height:  100%;
+    background-color: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y:  auto;
+}
+
+.modal-content. large {
+    max-width: 800px;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #000;
+}
+
+.anime-header {
+    border-bottom: 2px solid #eee;
+    padding-bottom:  20px;
+    margin-bottom: 20px;
+}
+
+.anime-stats {
+    margin:  15px 0;
+}
+
+. big-rating {
+    font-size: 32px;
+    color: #ffa500;
+    margin-right: 15px;
+}
+
+.review-form {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.edit-form {
+    background: #e9ecef;
+    padding:  15px;
+    margin-top: 10px;
+    border-radius:  5px;
+}
+
+. hint {
+    font-size: 12px;
+    color: #dc3545;
+    margin:  5px 0;
+}
+
+.star-rating {
+    display: flex;
+    gap: 5px;
+    font-size: 30px;
+    margin:  10px 0;
+}
+
+. star {
+    color: #ddd;
+}
+
+.star.filled {
+    color: #ffa500;
+}
+
+.add-review-option {
+    margin:  15px 0;
+    padding:  10px;
+    background:  #f0f0f0;
+    border-radius: 5px;
+}
+
+.add-review-option label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    margin:  0;
+}
+
+#add-review-section {
+    background: #e9ecef;
+    padding:  15px;
+    border-radius:  5px;
+    margin:  15px 0;
+}
+
+.reviews-section {
+    margin-top: 20px;
+}
+
+.review-item {
+    background: #f9f9f9;
+    padding: 15px;
+    margin:  10px 0;
+    border-radius: 5px;
+}
+
+.review-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom:  10px;
+}
+
+. badge {
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.badge.watched {
+    background: #28a745;
+    color: white;
+}
+
+.badge.planning {
+    background: #ffc107;
+    color: #333;
+}
+
+.review-rating {
+    color: #ffa500;
+    font-weight:  bold;
+    margin-left: auto;
+}
+
+.review-text {
+    margin: 10px 0;
+    color:  #333;
+    line-height: 1.5;
+}
+
+.no-text {
+    color: #999;
+    font-style: italic;
+}
+
+.review-date {
+    font-size: 12px;
+    color: #999;
+}
+
+.no-reviews {
+    text-align: center;
+    color: #999;
+    padding: 20px;
+}
+
+.stats-items {
+    margin-top: 20px;
+}
+
+.stat-item {
+    background: #f9f9f9;
+    padding: 20px;
+    margin: 15px 0;
+    border-radius: 5px;
+    border-left: 4px solid #28a745;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    cursor: default;
+    transition: transform 0.2s;
+}
+
+.stat-item:hover {
+    transform: translateX(5px);
+}
+
+.stat-rank {
+    font-size: 32px;
+    font-weight:  bold;
+    color: #2575fc;
+    min-width: 60px;
+}
+
+.stat-info {
+    flex: 1;
+}
+
+. stat-info h3 {
+    margin:  0 0 10px 0;
+    color: #333;
+}
+
+.stat-meta {
+    display: flex;
+    gap: 15px;
+}
+
+.stat-rating {
+    color: #ffa500;
+    font-weight: bold;
+}
+
+.stat-reviews {
+    color: #666;
+}
+
+.no-data {
+    text-align: center;
+    color: #666;
+    padding: 40px;
+    font-size: 18px;
+}
