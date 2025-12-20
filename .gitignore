@@ -1,6 +1,23 @@
-*. db
 __pycache__/
-*.pyc
-.pytest_cache/
-.venv/
+*.py[cod]
+*$py. class
+*.so
+.Python
 venv/
+env/
+ENV/
+. venv
+
+*.db
+*.sqlite
+*.sqlite3
+
+.vscode/
+.idea/
+*. swp
+*.swo
+*~
+
+.pytest_cache/
+.coverage
+htmlcov/
